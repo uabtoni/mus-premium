@@ -1,12 +1,139 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@import "tailwindcss";
+
+/* ────────────────────────────────────────────────────────────────────────
+   Mus Premium · Identidad visual "Club nocturno"
+   Tinta casi negra, marfil cálido, verde ácido (nosotros) y coral (ellos).
+   ──────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+
+  --color-ink-950: #07080a;
+  --color-ink-900: #0c0e11;
+  --color-ink-850: #111317;
+  --color-ink-800: #16191e;
+  --color-ink-700: #1f232a;
+  --color-ink-600: #2a2f37;
+
+  --color-bone: #ede6d6;
+  --color-bone-dim: #a8a194;
+  --color-mute: #6d6961;
+
+  --color-acid: #d4ff4f;
+  --color-acid-deep: #a6cc2e;
+  --color-ember: #ff5a36;
+  --color-ember-deep: #c63d20;
+  --color-gold: #d9a441;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-spin-slow: spin 3.2s linear infinite;
+  --animate-breathe: breathe 2.4s ease-in-out infinite;
+  --animate-drift: drift 22s ease-in-out infinite alternate;
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.04); }
+  }
+  @keyframes drift {
+    0% { transform: translate3d(-4%, -2%, 0) scale(1); }
+    100% { transform: translate3d(4%, 3%, 0) scale(1.08); }
+  }
 }
 
-html, body, #root {
-  width: 100vw;
-  height: 100vh;
-  background-color: #0a0a0a;
-  overflow: hidden; /* Evita cualquier barra de desplazamiento indeseada */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background: var(--color-ink-950);
+    color: var(--color-bone);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+  }
+
+  ::selection {
+    background: var(--color-acid);
+    color: var(--color-ink-950);
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  :focus-visible {
+    outline: 1.5px solid var(--color-acid);
+    outline-offset: 3px;
+  }
+}
+
+/* Panel de cristal: fondo translúcido, desenfoque y filo de luz superior. */
+@utility glass {
+  background: linear-gradient(180deg, rgb(26 29 35 / 0.62), rgb(14 16 19 / 0.58));
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  border: 1px solid rgb(237 230 214 / 0.075);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 24px 60px -24px rgb(0 0 0 / 0.85);
+}
+
+/* Etiqueta técnica en mayúsculas. */
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-bone-dim);
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Grano de película sobre toda la app. */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: -50%;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Anillo de turno giratorio. */
+.turn-ring {
+  background: conic-gradient(from 0deg, transparent 0 55%, currentColor 80%, transparent 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+}
+
+/* Scrollbar discreta para listas. */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(237 230 214 / 0.12) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
