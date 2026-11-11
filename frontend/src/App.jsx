@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { actions, useStore } from './lib/store'
 import { Backdrop, OfflineBanner, Toasts, Wordmark } from './components/ui'
+import { InviteDialog } from './components/Friends'
 import LoginScreen from './screens/LoginScreen'
 import LobbyScreen from './screens/LobbyScreen'
 import RoomScreen from './screens/RoomScreen'
@@ -52,17 +53,18 @@ export default function App() {
         <motion.main
           key={screen}
           className="h-full"
-          initial={{ opacity: 0, filter: 'blur(8px)' }}
-          animate={{ opacity: 1, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, filter: 'blur(8px)' }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25 }}
         >
           <Suspense fallback={<Splash />}>
             <Screen />
           </Suspense>
         </motion.main>
       </AnimatePresence>
-      <OfflineBanner />
+      {user && <OfflineBanner />}
+      {user && <InviteDialog />}
       <Toasts />
     </div>
   )

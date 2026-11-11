@@ -17,6 +17,18 @@ function username(value) {
   return name;
 }
 
+function password(value) {
+  if (typeof value !== 'string' || value.length < 6 || value.length > 72) {
+    throw new AppError('INVALID_PASSWORD', 'La contraseña debe tener entre 6 y 72 caracteres');
+  }
+  return value;
+}
+
+function positiveInt(value, field) {
+  if (!Number.isInteger(value) || value <= 0) throw new AppError('INVALID_PAYLOAD', `"${field}" no es válido`);
+  return value;
+}
+
 function roomCode(value) {
   const code = typeof value === 'string' ? value.trim().toUpperCase() : '';
   if (!ROOM_CODE_RE.test(code)) throw new AppError('INVALID_ROOM_CODE', 'Código de sala no válido');
@@ -44,4 +56,4 @@ function object(value) {
   return value;
 }
 
-module.exports = { username, roomCode, seat, bool, object };
+module.exports = { username, password, positiveInt, roomCode, seat, bool, object };

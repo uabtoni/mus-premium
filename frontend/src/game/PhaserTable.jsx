@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import Phaser from 'phaser'
 import { MusTableScene } from './MusTableScene'
-import { loadFonts } from '../lib/cardArt'
+import { loadCardAssets } from '../lib/cardArt'
 
 /**
  * Monta Phaser dentro de React. El juego se crea una sola vez; el estado y la
@@ -22,7 +22,7 @@ export default function PhaserTable({ state, selection, onToggleCard }) {
     let game = null
     let observer = null
 
-    loadFonts().then(() => {
+    loadCardAssets().then(() => {
       if (cancelled || !hostRef.current) return
       const el = hostRef.current
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -74,5 +74,5 @@ export default function PhaserTable({ state, selection, onToggleCard }) {
     gameRef.current?.registry.set('selection', selection)
   }, [selection])
 
-  return <div ref={hostRef} className="absolute inset-0 overflow-hidden [&>canvas]:block" />
+  return <div ref={hostRef} className="absolute inset-0 touch-none select-none overflow-hidden [&>canvas]:block [&>canvas]:touch-none" />
 }

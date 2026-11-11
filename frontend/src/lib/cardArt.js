@@ -1,33 +1,70 @@
 import { SUITS, FIGURES } from './mus'
 
 /**
- * Baraja española "Premium" dibujada con Canvas 2D. Única fuente del diseño:
- * la usan tanto Phaser (texturas) como los componentes React (decoración).
- * Todas las medidas están en un lienzo base de 300×450 (proporción 2:3).
+ * Cartas de la baraja española. Única fuente del diseño: la usan tanto Phaser
+ * (texturas) como los componentes React (decoración). Lienzo base de 300×450.
+ *
+ * Dos estilos de cara:
+ *  - 'clasica': los naipes tradicionales (diseño de Augusto Rius, 1889), a
+ *    partir de fotos con licencia CC BY-SA 4.0 (ver public/cards/CREDITOS.md).
+ *  - 'moderna': el diseño propio dibujado con Canvas 2D.
+ * Para volver al diseño moderno basta con cambiar CARD_STYLE.
  */
+export const CARD_STYLE = 'clasica'
+
 export const CARD_W = 300
 export const CARD_H = 450
-const RADIUS = 26
+// Radio de las esquinas: el naipe real es más recto (≈ 3 mm sobre 61 mm).
+const RADIUS = CARD_STYLE === 'clasica' ? 16 : 26
 
 export const FONT_STACK = {
   display: '"Instrument Serif", Georgia, serif',
   mono: '"Geist Mono", ui-monospace, monospace',
 }
 
-let fontsPromise = null
-/** Garantiza que las fuentes web están cargadas antes de pintar en canvas. */
-export function loadFonts() {
-  if (!fontsPromise) {
-    fontsPromise = Promise.all([
+const CLASSIC_SUITS = ['oros', 'copas', 'espadas', 'bastos']
+const CLASSIC_RANKS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12]
+const classicImages = new Map() // id ('oros-1') -> HTMLImageElement
+
+function loadClassicImages() {
+  const base = `${import.meta.env.BASE_URL}cards/`
+  const jobs = []
+  for (const suit of CLASSIC_SUITS) {
+    for (const rank of CLASSIC_RANKS) {
+      const id = `${suit}-${rank}`
+      const img = new Image()
+      img.decoding = 'async'
+      jobs.push(
+        new Promise((resolve) => {
+          img.onload = () => {
+            classicImages.set(id, img)
+            resolve()
+          }
+          // Si falta una imagen, esa carta se pinta con el diseño moderno.
+          img.onerror = () => resolve()
+        }),
+      )
+      img.src = `${base}${id}.webp`
+    }
+  }
+  return Promise.all(jobs)
+}
+
+let assetsPromise = null
+/** Fuentes web e imágenes de las cartas listas antes de pintar en canvas. */
+export function loadCardAssets() {
+  if (!assetsPromise) {
+    assetsPromise = Promise.all([
       document.fonts.load('italic 80px "Instrument Serif"'),
       document.fonts.load('80px "Instrument Serif"'),
       document.fonts.load('600 40px "Geist Mono"'),
       document.fonts.load('500 20px "Geist Mono"'),
+      CARD_STYLE === 'clasica' ? loadClassicImages() : null,
     ])
       .catch(() => {})
       .then(() => undefined)
   }
-  return fontsPromise
+  return assetsPromise
 }
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -172,6 +209,11 @@ function drawCorner(ctx, card, s) {
  * @param {{suit: string, rank: number}} card
  */
 export function drawCardFace(ctx, card) {
+  const photo = CARD_STYLE === 'clasica' ? classicImages.get(`${card.suit}-${card.rank}`) : null
+  if (photo) {
+    drawClassicFace(ctx, photo)
+    return
+  }
   const s = SUITS[card.suit]
   const W = CARD_W
   const H = CARD_H
@@ -246,6 +288,28 @@ export function drawCardFace(ctx, card) {
   // Canto
   roundRect(ctx, 0.75, 0.75, W - 1.5, H - 1.5, RADIUS)
   ctx.strokeStyle = 'rgba(0,0,0,0.18)'
+  ctx.lineWidth = 1.5
+  ctx.stroke()
+}
+
+/** Naipe tradicional: la foto recortada con esquinas redondeadas y canto sutil. */
+function drawClassicFace(ctx, img) {
+  ctx.save()
+  roundRect(ctx, 0, 0, CARD_W, CARD_H, RADIUS)
+  ctx.clip()
+  ctx.fillStyle = '#f5f1e8'
+  ctx.fillRect(0, 0, CARD_W, CARD_H)
+  ctx.drawImage(img, 0, 0, CARD_W, CARD_H)
+  // Brillo muy leve en la parte superior, como el satinado del cartón.
+  const gloss = ctx.createLinearGradient(0, 0, 0, CARD_H)
+  gloss.addColorStop(0, 'rgba(255,255,255,0.06)')
+  gloss.addColorStop(0.5, 'rgba(255,255,255,0)')
+  ctx.fillStyle = gloss
+  ctx.fillRect(0, 0, CARD_W, CARD_H)
+  ctx.restore()
+
+  roundRect(ctx, 0.75, 0.75, CARD_W - 1.5, CARD_H - 1.5, RADIUS)
+  ctx.strokeStyle = 'rgba(0,0,0,0.22)'
   ctx.lineWidth = 1.5
   ctx.stroke()
 }

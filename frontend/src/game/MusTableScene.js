@@ -234,7 +234,10 @@ export class MusTableScene extends Phaser.Scene {
   /** Destino de cada carta de una posición. */
   targetFor(rel, i, n, card) {
     const s = cardSlot(this.L, rel, i, n)
-    const t = { x: s.x * this.dpr, y: s.y * this.dpr, angle: s.angle, scale: rel === 0 ? this.myScale : this.backScale, glow: 0 }
+    // En el conteo las cartas rivales crecen un poco para que se lean.
+    const revealing = this.revealedHand === this.state?.handNumber
+    const scale = rel === 0 ? this.myScale : this.backScale * (revealing ? this.L.revealScale ?? 1.25 : 1)
+    const t = { x: s.x * this.dpr, y: s.y * this.dpr, angle: s.angle, scale, glow: 0 }
     if (rel === 0 && card) {
       const lift = this.L.myH * this.dpr
       const marked = this.state?.you?.pendingDiscard?.includes(card.cardId)
@@ -291,7 +294,8 @@ export class MusTableScene extends Phaser.Scene {
     if (cardId) {
       card.faceKeyTarget = faceKey(cardId)
       face.setInteractive({ useHandCursor: true, pixelPerfect: false })
-      face.on('pointerover', () => {
+      face.on('pointerover', (pointer) => {
+        if (pointer?.wasTouch) return
         card.hovered = true
         if (this.canSelect()) this.layoutSeat(0, 160)
       })
@@ -345,8 +349,17 @@ export class MusTableScene extends Phaser.Scene {
   receive(state) {
     if (!state?.you) return
     if (this.busy) {
-      this.pendingState = state
-      return
+      // Si llega otra mano (p. ej. la pestaña estuvo en segundo plano y la
+      // animación quedó a medias), se corta lo pendiente y se salta a la actual.
+      if (this.state && state.handNumber !== this.state.handNumber) {
+        this.tweens.killAll()
+        this.time.removeAllEvents()
+        this.busy = false
+        this.pendingState = null
+      } else {
+        this.pendingState = state
+        return
+      }
     }
     const prev = this.state
     this.state = state
@@ -364,7 +377,58 @@ export class MusTableScene extends Phaser.Scene {
     } else {
       this.layoutAll()
     }
+    this.maybeReveal(state)
+    this.maybeOrdagoFx(state)
     this.updateLight(state)
+  }
+
+  // ───────────────────────────── Conteo y órdago ─────────────────────────────
+
+  /** En el conteo se enseñan las cartas de todos, de una en una. */
+  maybeReveal(state) {
+    const result = state.handResult
+    if (!result || this.busy || this.revealedHand === state.handNumber) return
+    this.revealedHand = state.handNumber
+    for (let rel = 1; rel < 4; rel += 1) {
+      const seat = (state.you.seat + rel) % 4
+      const cards = sortHand(result.revealed[seat] ?? [])
+      this.cards[rel].forEach((card, i) => {
+        if (!cards[i]) return
+        card.faceKeyTarget = faceKey(cards[i].id)
+        this.flip(card, card.faceKeyTarget, 180 + rel * 140 + i * 80)
+      })
+    }
+    this.layoutAll(520)
+  }
+
+  maybeOrdagoFx(state) {
+    const a = state.lastAction
+    if (!a || a.at === this.lastFxAt) return
+    if (a.type === 'BET' && a.action === 'ordago') {
+      this.lastFxAt = a.at
+      this.ordagoFx(false)
+    } else if (a.type === 'BET' && a.closed === 'QUERIDO' && a.bet?.ordago) {
+      this.lastFxAt = a.at
+      this.ordagoFx(true)
+    }
+  }
+
+  /** Destello coral breve (sin sacudir la cámara). */
+  ordagoFx(strong) {
+    const W = this.scale.width
+    const H = this.scale.height
+    const flash = this.add
+      .rectangle(W / 2, H / 2, W, H, COLOR_THEM)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setDepth(95)
+      .setAlpha(strong ? 0.22 : 0.14)
+    this.tweens.add({
+      targets: flash,
+      alpha: 0,
+      duration: strong ? 900 : 650,
+      ease: 'Cubic.easeOut',
+      onComplete: () => flash.destroy(),
+    })
   }
 
   finishAnimation() {
@@ -374,6 +438,9 @@ export class MusTableScene extends Phaser.Scene {
       const next = this.pendingState
       this.pendingState = null
       this.receive(next)
+    } else if (this.state) {
+      // Si la mano ya estaba terminada (p. ej. al recargar en el conteo), se enseñan las cartas.
+      this.maybeReveal(this.state)
     }
   }
 
@@ -448,7 +515,7 @@ export class MusTableScene extends Phaser.Scene {
           targets: card,
           x: this.discardPos.x + jitter(),
           y: this.discardPos.y + jitter(),
-          angle: Math.random() * 360,
+          angle: (Math.random() - 0.5) * 50,
           scale: this.backScale * 0.82,
           duration: 420,
           delay: k * 30,
@@ -529,7 +596,12 @@ export class MusTableScene extends Phaser.Scene {
     let alpha = 0.16
     let color = COLOR_US
 
-    if (state.turn !== null && state.turn !== undefined) {
+    const ordago = Boolean(state.betting?.bet?.ordago)
+    if (ordago) {
+      // Órdago sobre la mesa: luz de alarma en el centro.
+      alpha = 0.6
+      color = COLOR_THEM
+    } else if (state.turn !== null && state.turn !== undefined) {
       const rel = relativeSeat(state.turn, state.you.seat)
       const h = this.L.hands[rel]
       x = (this.L.center.x + (h.x - this.L.center.x) * 0.62) * d
@@ -538,20 +610,37 @@ export class MusTableScene extends Phaser.Scene {
       color = isMyTeam(state.turn, state.you.seat) ? COLOR_US : COLOR_THEM
     }
 
-    this.light.setTint(color)
+    this.tweens.killTweensOf(this.light)
+    const moved = Math.hypot(this.light.x - x, this.light.y - y) > 2
     if (instant) {
-      this.light.setPosition(x, y).setAlpha(alpha)
+      this.light.setTint(color).setPosition(x, y).setAlpha(alpha)
+    } else if (!moved) {
+      this.light.setTint(color)
+      this.tweens.add({ targets: this.light, alpha, duration: 300 })
     } else {
-      this.tweens.add({ targets: this.light, x, y, alpha, duration: 650, ease: 'Sine.easeInOut' })
+      this.tweens.add({
+        targets: this.light,
+        alpha: 0,
+        duration: 140,
+        onComplete: () => {
+          this.light.setTint(color).setPosition(x, y)
+          this.tweens.add({ targets: this.light, alpha, duration: 320 })
+        },
+      })
     }
 
     // Pulso ambiental cuando es tu turno.
+    // Luz ambiental fija (sin latir) cuando es tu turno o hay órdago.
     this.tweens.killTweensOf(this.rimPulse)
-    if (state.turn === state.you.seat || this.canSelect()) {
-      this.rimPulse.setTint(COLOR_US).setAlpha(0.02)
-      this.tweens.add({ targets: this.rimPulse, alpha: 0.09, duration: 1300, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' })
-    } else {
-      this.tweens.add({ targets: this.rimPulse, alpha: 0, duration: 400 })
+    let rim = 0
+    if (ordago) {
+      this.rimPulse.setTint(COLOR_THEM)
+      rim = 0.14
+    } else if (state.turn === state.you.seat || this.canSelect()) {
+      this.rimPulse.setTint(COLOR_US)
+      rim = 0.06
     }
+    if (instant) this.rimPulse.setAlpha(rim)
+    else this.tweens.add({ targets: this.rimPulse, alpha: rim, duration: 400 })
   }
 }

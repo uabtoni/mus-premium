@@ -3,10 +3,9 @@
 const { randomBytes } = require('node:crypto');
 
 /**
- * Sesiones en memoria. Un jugador se identifica por `playerId` (estable entre
- * reconexiones), nunca por `socket.id`. El `token` es secreto: el cliente lo
- * guarda y lo envía en `io({ auth: { sessionToken } })` para recuperar su
- * asiento tras recargar la página o perder la conexión.
+ * Sesiones de juego en memoria (una por jugador conectado). La identidad la da
+ * el token de cuenta, guardado en BD; aquí solo se relaciona el jugador con su
+ * socket actual, su perfil y su lista de amigos.
  */
 class SessionStore {
   constructor() {
@@ -27,6 +26,7 @@ class SessionStore {
       profile,
       socketId: null,
       connected: false,
+      friendIds: new Set(),
       createdAt: Date.now(),
       lastSeen: Date.now(),
     };

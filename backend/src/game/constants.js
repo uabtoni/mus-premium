@@ -58,6 +58,13 @@ const SIGNALS = Object.freeze([
   'ciego',
 ]);
 
+// Frases rápidas para toda la mesa (el texto vive en el cliente).
+const QUICK_PHRASES = Object.freeze([
+  'buena', 'bien-jugado', 'suerte', 'venga-ya', 'me-la-juego', 'piensalo', 'gracias', 'uy', 'jaja', 'aplausos',
+  'todo-lo-que-llevas', 'calentitos', 'farol', 'dos-reyes', 'sufrir', 'echa-el-resto', 'juegas-o-miras',
+  'temblar', 'perdido', 'llorad',
+]);
+
 // Asientos 0 y 2 forman la pareja 0; asientos 1 y 3, la pareja 1.
 // El turno avanza en orden creciente de asiento (sentido antihorario en la mesa).
 const teamOf = (seat) => seat % 2;
@@ -76,6 +83,7 @@ module.exports = {
   PHASES,
   BETTING_PHASES,
   SIGNALS,
+  QUICK_PHRASES,
   teamOf,
   partnerOf,
   nextSeat,

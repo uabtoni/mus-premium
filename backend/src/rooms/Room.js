@@ -18,7 +18,23 @@ class Room {
     this.seats = Array(SEATS).fill(null);
     this.status = ROOM_STATUS.WAITING;
     this.game = null;
+    this.searching = false; // buscando rivales (mesa abierta a matchmaking)
     this.createdAt = Date.now();
+  }
+
+  /** Abre (o cierra) la mesa al matchmaking para encontrar rivales. */
+  setSearching(on) {
+    this._assertWaiting();
+    this.searching = on && !this.isFull;
+    if (on) this.isPrivate = false;
+  }
+
+  /** Si los dos únicos jugadores son pareja, devuelve su equipo; si no, null. */
+  pairTeam() {
+    const m = this.members();
+    if (m.length !== 2 || m.some((x) => x.isBot)) return null;
+    const [a, b] = m.map((x) => this.seatOf(x.playerId));
+    return a % 2 === b % 2 ? a % 2 : null;
   }
 
   get playerCount() {
@@ -35,6 +51,31 @@ class Room {
 
   get humanCount() {
     return this.seats.filter((s) => s && !s.isBot).length;
+  }
+
+  /**
+   * Un bot pasa a jugar por este jugador (desconexión, ausencia o abandono).
+   * Conserva su playerId para que, si vuelve, recupere el asiento.
+   */
+  substitute(playerId) {
+    const member = this.getMember(playerId);
+    if (!member) return null;
+    member.isBot = true;
+    member.substitute = true;
+    member.ready = true;
+    member.timeouts = 0;
+    return member;
+  }
+
+  /** El jugador vuelve y deja de jugar el bot por él. */
+  restore(playerId) {
+    const member = this.getMember(playerId);
+    if (!member?.substitute) return false;
+    member.isBot = false;
+    member.substitute = false;
+    member.timeouts = 0;
+    member.connected = true;
+    return true;
   }
 
   members() {
@@ -84,6 +125,7 @@ class Room {
 
     this.seats[seat] = { playerId, username, isBot: false, ready: false, connected: true, joinedAt: Date.now() };
     if (!this.hostId) this.hostId = playerId;
+    if (this.isFull) this.searching = false;
     return seat;
   }
 
@@ -166,6 +208,7 @@ class Room {
     return {
       code: this.code,
       isPrivate: this.isPrivate,
+      searching: this.searching,
       status: this.status,
       hostId: this.hostId,
       playerCount: this.playerCount,
@@ -179,6 +222,7 @@ class Room {
               playerId: s.playerId,
               username: s.username,
               isBot: s.isBot,
+              substitute: Boolean(s.substitute),
               ready: s.ready,
               connected: s.connected,
               isHost: s.playerId === this.hostId,

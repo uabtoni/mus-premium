@@ -50,6 +50,13 @@
     height: 100%;
   }
 
+  /* La página nunca se desplaza ni rebota: todo vive en pantallas fijas. */
+  html {
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     background: var(--color-ink-950);
     color: var(--color-bone);
@@ -58,6 +65,10 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow: hidden;
+    /* Móvil: sin zoom por doble toque ni "tirar para recargar" en mitad de una mano. */
+    touch-action: manipulation;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   ::selection {

@@ -117,10 +117,36 @@ class RoomManager {
     return added;
   }
 
+  /**
+   * Empareja dos parejas que buscan rivales: la pareja de la otra mesa se
+   * sienta en los asientos libres de esta y su mesa se cierra.
+   * @returns {null | { room: Room, moved: string[], closedCode: string }}
+   */
+  tryMergePairs(room) {
+    if (!room.searching || room.status !== ROOM_STATUS.WAITING) return null;
+    const team = room.pairTeam();
+    if (team === null) return null;
+    const other = [...this.rooms.values()].find(
+      (r) => r !== room && r.searching && r.status === ROOM_STATUS.WAITING && r.pairTeam() !== null,
+    );
+    if (!other) return null;
+
+    const freeSeats = [0, 1, 2, 3].filter((s) => s % 2 !== team);
+    const movers = other.members().map((m) => ({ playerId: m.playerId, username: m.username }));
+    const closedCode = other.code;
+    movers.forEach((mover, i) => {
+      this.leaveRoom(mover.playerId);
+      room.addPlayer(mover, freeSeats[i]);
+      this.playerRoom.set(mover.playerId, room.code);
+    });
+    room.searching = false;
+    return { room, moved: movers.map((m) => m.playerId), closedCode };
+  }
+
   listPublicRooms() {
     return [...this.rooms.values()]
       .filter((r) => !r.isPrivate && r.status === ROOM_STATUS.WAITING)
-      .map((r) => ({ code: r.code, playerCount: r.playerCount, createdAt: r.createdAt }));
+      .map((r) => ({ code: r.code, playerCount: r.playerCount, searching: r.searching, createdAt: r.createdAt }));
   }
 }
 

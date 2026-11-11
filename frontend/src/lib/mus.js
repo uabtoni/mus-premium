@@ -27,6 +27,43 @@ export const LANCES = [
   { key: 'JUEGO', label: 'Juego', phases: ['JUEGO', 'PUNTO'] },
 ]
 
+export const LANCE_LABELS = {
+  GRANDE: 'Grande',
+  CHICA: 'Chica',
+  PARES: 'Pares',
+  JUEGO: 'Juego',
+  PUNTO: 'Punto',
+}
+
+/** Añade a cada apuesta el total en juego tras ella (para "Sube 4 · van 6"). */
+export function withTotals(entries) {
+  let current = 0
+  return entries.map((e) => {
+    if (e.action === 'envido') current = e.amount
+    else if (e.action === 'subir') current += e.amount
+    return { ...e, total: current }
+  })
+}
+
+export function actionText(e, { cut = false } = {}) {
+  switch (e.action) {
+    case 'paso':
+      return 'Paso'
+    case 'envido':
+      return cut ? `Corto · envido ${e.amount}` : `Envido ${e.amount}`
+    case 'subir':
+      return `Sube ${e.amount} · van ${e.total}`
+    case 'ordago':
+      return '¡Órdago!'
+    case 'quiero':
+      return 'Quiero'
+    case 'no_quiero':
+      return 'No quiero'
+    default:
+      return e.action
+  }
+}
+
 // Señas tradicionales. La tecla es el atajo de teclado.
 export const SIGNALS = [
   { id: 'dos-reyes', key: '1', label: 'Dos reyes', gesture: 'Morder el labio inferior' },
@@ -52,3 +89,28 @@ export function initials(name = '') {
   const parts = name.trim().split(/\s+/)
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? parts[0]?.[1] ?? '')).toUpperCase()
 }
+
+// Frases rápidas para toda la mesa (los ids los valida el servidor).
+export const QUICK_PHRASES = [
+  { id: 'buena', text: '¡Buena mano!' },
+  { id: 'bien-jugado', text: 'Bien jugado' },
+  { id: 'suerte', text: 'Vaya suerte…' },
+  { id: 'venga-ya', text: '¡Venga ya!' },
+  { id: 'me-la-juego', text: 'Me la juego' },
+  { id: 'piensalo', text: 'Piénsalo bien…' },
+  { id: 'gracias', text: 'Gracias, compañero' },
+  { id: 'uy', text: 'Uy, uy, uy…' },
+  { id: 'jaja', text: 'Jajaja' },
+  { id: 'aplausos', text: '👏👏👏' },
+  { id: 'todo-lo-que-llevas', text: '¿Eso es todo lo que llevas?', spicy: true },
+  { id: 'calentitos', text: 'Os vais a casa calentitos', spicy: true },
+  { id: 'farol', text: 'Eso huele a farol', spicy: true },
+  { id: 'dos-reyes', text: 'Tú no tienes ni dos reyes', spicy: true },
+  { id: 'sufrir', text: 'Aquí se viene a sufrir', spicy: true },
+  { id: 'echa-el-resto', text: 'Echa el resto si te atreves', spicy: true },
+  { id: 'juegas-o-miras', text: '¿Juegas o miras?', spicy: true },
+  { id: 'temblar', text: 'Te veo temblar', spicy: true },
+  { id: 'perdido', text: 'Más perdido que un as a la grande', spicy: true },
+  { id: 'llorad', text: 'Llorad, que es gratis', spicy: true },
+]
+export const PHRASE_BY_ID = Object.fromEntries(QUICK_PHRASES.map((p) => [p.id, p]))

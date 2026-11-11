@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { initials, TEAM_COLORS } from '../lib/mus'
-import { renderCardCanvas, loadFonts, CARD_W, CARD_H } from '../lib/cardArt'
+import { renderCardCanvas, loadCardAssets, CARD_W, CARD_H } from '../lib/cardArt'
 import { dismissToast, useStore } from '../lib/store'
 import { cx } from '../lib/cx'
 
@@ -35,7 +35,7 @@ export const Button = forwardRef(function Button(
       transition={{ type: 'spring', stiffness: 500, damping: 30 }}
       disabled={disabled}
       className={cx(
-        'relative inline-flex select-none items-center justify-center font-medium tracking-[-0.01em] transition-[background,box-shadow,color,border-color] duration-200',
+        'relative inline-flex select-none items-center justify-center whitespace-nowrap font-medium tracking-[-0.01em] transition-[background,box-shadow,color,border-color] duration-200',
         VARIANTS[variant],
         SIZES[size],
         className,
@@ -46,7 +46,7 @@ export const Button = forwardRef(function Button(
       {kbd && (
         <kbd
           className={cx(
-            'ml-1 rounded-[5px] border px-1.5 py-px font-mono text-[10px] leading-4',
+            'ml-1 rounded-[5px] border px-1.5 py-px font-mono text-[10px] leading-4 [@media(hover:none)]:hidden',
             variant === 'primary' || variant === 'ember'
               ? 'border-ink-950/25 text-ink-950/60'
               : 'border-white/10 text-bone-dim',
@@ -97,13 +97,12 @@ export function Avatar({ name, team = 'us', active = false, size = 56, isBot = f
     <div className={cx('relative shrink-0', className)} style={{ width: size, height: size }}>
       {active && (
         <>
-          <motion.div
-            className="absolute -inset-3 rounded-full"
+          {/* Turno: halo y aro fijos (sin girar ni latir, para no marear). */}
+          <div
+            className="absolute -inset-3 rounded-full opacity-90"
             style={{ background: `radial-gradient(circle, ${TEAM_COLORS[team].glow} 0%, transparent 68%)` }}
-            animate={{ opacity: [0.5, 1, 0.5], scale: [0.96, 1.06, 0.96] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
           />
-          <div className="turn-ring absolute -inset-[5px] animate-spin-slow rounded-full" style={{ color }} />
+          <div className="absolute -inset-[4px] rounded-full border-2" style={{ borderColor: color, boxShadow: `0 0 14px ${color}` }} />
         </>
       )}
       <div
@@ -140,7 +139,7 @@ export function CardImage({ card, width = 120, className, style }) {
   const ref = useRef(null)
   useEffect(() => {
     let alive = true
-    loadFonts().then(() => {
+    loadCardAssets().then(() => {
       if (!alive || !ref.current) return
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       const src = renderCardCanvas(card, (width * dpr) / CARD_W)
@@ -167,8 +166,8 @@ export function CardImage({ card, width = 120, className, style }) {
 export function Backdrop() {
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-ink-950">
-      <div className="absolute left-1/2 top-[-30%] h-[90vh] w-[120vw] -translate-x-1/2 animate-drift rounded-[50%] bg-[radial-gradient(closest-side,rgba(212,255,79,0.075),transparent)]" />
-      <div className="absolute bottom-[-35%] right-[-15%] h-[80vh] w-[70vw] animate-drift rounded-[50%] bg-[radial-gradient(closest-side,rgba(255,90,54,0.06),transparent)] [animation-delay:-8s]" />
+      <div className="absolute left-1/2 top-[-30%] h-[90vh] w-[120vw] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(closest-side,rgba(212,255,79,0.075),transparent)]" />
+      <div className="absolute bottom-[-35%] right-[-15%] h-[80vh] w-[70vw] rounded-[50%] bg-[radial-gradient(closest-side,rgba(255,90,54,0.06),transparent)]" />
       <div
         className="absolute inset-0 opacity-[0.35]"
         style={{
@@ -234,7 +233,7 @@ const TONES = {
 export function Toasts() {
   const toasts = useStore((s) => s.toasts)
   return (
-    <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 flex w-[min(92vw,420px)] -translate-x-1/2 flex-col items-center gap-2">
+    <div className="pointer-events-none fixed left-1/2 top-16 z-50 flex w-[min(92vw,420px)] -translate-x-1/2 flex-col items-center gap-2 sm:bottom-6 sm:top-auto">
       <AnimatePresence initial={false}>
         {toasts.map((t) => (
           <motion.button
@@ -256,3 +255,31 @@ export function Toasts() {
   )
 }
 
+
+// ───────────────────────────── Créditos de los naipes ─────────────────────────────
+
+/** Atribución obligatoria de las fotos de los naipes (CC BY-SA 4.0). */
+export function CardsCredit({ className }) {
+  return (
+    <p className={cx('text-[11px] leading-relaxed text-mute', className)}>
+      Naipes: diseño de Augusto Rius (1889) · fotos de{' '}
+      <a
+        href="https://commons.wikimedia.org/wiki/Category:Castilian_pattern"
+        target="_blank"
+        rel="noreferrer"
+        className="underline decoration-white/20 underline-offset-2 hover:text-bone-dim"
+      >
+        Cantabrucu en Wikimedia Commons
+      </a>
+      , retocadas ·{' '}
+      <a
+        href="https://creativecommons.org/licenses/by-sa/4.0/deed.es"
+        target="_blank"
+        rel="noreferrer"
+        className="underline decoration-white/20 underline-offset-2 hover:text-bone-dim"
+      >
+        CC BY-SA 4.0
+      </a>
+    </p>
+  )
+}

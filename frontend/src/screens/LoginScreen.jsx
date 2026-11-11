@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { actions } from '../lib/store'
-import { Button, CardImage, ConnectionDot, Wordmark } from '../components/ui'
+import { Button, CardImage, CardsCredit, Wordmark } from '../components/ui'
+import { cx } from '../lib/cx'
 
 const FAN = [
   { card: { suit: 'oros', rank: 12 }, x: -150, y: 26, r: -16, delay: 0.15 },
@@ -12,20 +13,63 @@ const FAN = [
 
 const ease = [0.16, 1, 0.3, 1]
 
+function Field({ id, label, type = 'text', value, onChange, autoComplete, autoFocus, trailing }) {
+  return (
+    <label htmlFor={id} className="block">
+      <span className="eyebrow mb-2 block">{label}</span>
+      <span className="flex items-center rounded-2xl border border-white/[0.08] bg-ink-900/70 backdrop-blur-xl transition-colors focus-within:border-acid/50 focus-within:shadow-[0_0_0_4px_rgba(212,255,79,0.08)]">
+        <input
+          id={id}
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          autoComplete={autoComplete}
+          autoFocus={autoFocus}
+          autoCapitalize="none"
+          spellCheck={false}
+          className="h-13 min-w-0 flex-1 bg-transparent px-4 py-3.5 text-[16px] text-bone outline-none placeholder:text-mute"
+        />
+        {trailing}
+      </span>
+    </label>
+  )
+}
+
 export default function LoginScreen() {
-  const [name, setName] = useState('')
+  const [mode, setMode] = useState('login') // login | register
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
+
+  const register = mode === 'register'
+  const canSubmit =
+    username.trim().length >= 2 && password.length >= 6 && (!register || confirm.length >= 6) && !busy
 
   const submit = async (e) => {
     e.preventDefault()
-    if (busy || name.trim().length < 2) return
+    if (!canSubmit) return
+    if (register && password !== confirm) {
+      setError('Las contraseñas no coinciden')
+      return
+    }
     setBusy(true)
-    await actions.login(name.trim())
+    setError(null)
+    const res = await actions.authenticate(mode, username.trim(), password)
+    if (!res.ok) setError(res.error?.message ?? 'No se pudo entrar')
     setBusy(false)
   }
 
+  const switchMode = (m) => {
+    setMode(m)
+    setError(null)
+    setConfirm('')
+  }
+
   return (
-    <div className="relative mx-auto grid h-full max-w-[1320px] grid-cols-1 items-center gap-10 overflow-x-hidden overflow-y-auto px-6 py-10 lg:grid-cols-[1.05fr_1fr] lg:px-14">
+    <div className="relative mx-auto grid h-full max-w-[1320px] grid-cols-1 items-center gap-10 overflow-x-hidden overflow-y-auto px-5 py-10 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:px-14">
       <div className="relative z-10">
         <motion.p
           className="eyebrow mb-6 flex items-center gap-3"
@@ -41,7 +85,7 @@ export default function LoginScreen() {
         </motion.div>
 
         <motion.p
-          className="mt-6 max-w-[30ch] font-display text-[clamp(26px,2.6vw,38px)] leading-[1.08] text-bone/90"
+          className="mt-5 max-w-[30ch] font-display text-[clamp(24px,2.6vw,38px)] leading-[1.08] text-bone/90"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.1, ease }}
@@ -52,37 +96,90 @@ export default function LoginScreen() {
 
         <motion.form
           onSubmit={submit}
-          className="mt-12 max-w-[440px]"
+          className="glass mt-10 max-w-[440px] rounded-[26px] p-5 sm:p-6"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.2, ease }}
         >
-          <label htmlFor="name" className="eyebrow mb-3 block">
-            Tu nombre en la mesa
-          </label>
-          <div className="group flex gap-2 rounded-2xl border border-white/[0.08] bg-ink-900/70 p-1.5 backdrop-blur-xl transition-colors focus-within:border-acid/50 focus-within:shadow-[0_0_0_4px_rgba(212,255,79,0.08)]">
-            <input
-              id="name"
-              autoFocus
-              autoComplete="nickname"
-              maxLength={20}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="p. ej. Tekko"
-              className="h-12 min-w-0 flex-1 bg-transparent px-4 text-[17px] text-bone outline-none placeholder:text-mute"
+          <div className="relative mb-5 grid grid-cols-2 rounded-xl bg-ink-950/60 p-1">
+            {[
+              ['login', 'Entrar'],
+              ['register', 'Crear cuenta'],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => switchMode(key)}
+                className={cx(
+                  'relative h-10 rounded-lg text-[14px] font-medium transition-colors',
+                  mode === key ? 'text-ink-950' : 'text-bone-dim hover:text-bone',
+                )}
+              >
+                {mode === key && (
+                  <motion.span layoutId="auth-tab" className="absolute inset-0 rounded-lg bg-acid" transition={{ type: 'spring', stiffness: 450, damping: 34 }} />
+                )}
+                <span className="relative">{label}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-4">
+            <Field id="username" label="Usuario" value={username} onChange={setUsername} autoComplete="username" autoFocus />
+            <Field
+              id="password"
+              label="Contraseña"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={setPassword}
+              autoComplete={register ? 'new-password' : 'current-password'}
+              trailing={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="px-4 font-mono text-[11px] uppercase tracking-[0.14em] text-bone-dim hover:text-bone"
+                >
+                  {showPassword ? 'Ocultar' : 'Ver'}
+                </button>
+              }
             />
-            <Button type="submit" variant="primary" disabled={busy || name.trim().length < 2} className="h-12 px-6">
-              {busy ? 'Entrando…' : 'Sentarse'}
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-                <path d="M3 8h10m0 0L9 4m4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
-            </Button>
+            <AnimatePresence initial={false}>
+              {register && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                  <Field
+                    id="confirm"
+                    label="Repite la contraseña"
+                    type={showPassword ? 'text' : 'password'}
+                    value={confirm}
+                    onChange={setConfirm}
+                    autoComplete="new-password"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <div className="mt-4 flex items-center justify-between text-[13px] text-mute">
-            <span>Sin contraseña. Tu ELO se guarda con tu nombre.</span>
-            <ConnectionDot />
-          </div>
+
+          <AnimatePresence>
+            {error && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mt-4 rounded-xl border border-ember/30 bg-ember/10 px-4 py-2.5 text-[13.5px] text-ember"
+                role="alert"
+              >
+                {error}
+              </motion.p>
+            )}
+          </AnimatePresence>
+
+          <Button type="submit" variant="primary" size="lg" disabled={!canSubmit} className="mt-5 w-full">
+            {busy ? 'Un momento…' : register ? 'Crear cuenta y jugar' : 'Sentarse a la mesa'}
+          </Button>
+          <p className="mt-4 text-center text-[12.5px] text-mute">
+            {register ? 'De 2 a 20 caracteres para el usuario, 6 o más para la contraseña.' : 'Tu ELO, tus amigos y tus partidas, en tu cuenta.'}
+          </p>
         </motion.form>
+        <CardsCredit className="mt-6 max-w-[440px]" />
       </div>
 
       <div className="pointer-events-none relative hidden h-[560px] lg:block" aria-hidden>

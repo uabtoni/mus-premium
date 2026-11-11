@@ -3,7 +3,8 @@ import { motion } from 'framer-motion'
 import { actions, useStore } from '../lib/store'
 import { SERVER_URL } from '../lib/socket'
 import { cx } from '../lib/cx'
-import { Avatar, Button, CardImage, ConnectionDot, Wordmark } from '../components/ui'
+import { Avatar, Button, CardImage, CardsCredit, ConnectionDot, Wordmark } from '../components/ui'
+import { FriendsPanel } from '../components/Friends'
 
 const ease = [0.16, 1, 0.3, 1]
 const rise = (i) => ({
@@ -156,7 +157,7 @@ function LobbyView({ user }) {
             {greeting()}, <em className="text-acid">{firstName}</em>.
           </motion.h1>
           <motion.p {...rise(2)} className="mt-4 max-w-[52ch] text-[15px] leading-relaxed text-bone-dim">
-            Elige mesa. Partidas a 40 piedras, al mejor de tres juegos, con ocho reyes.
+            Elige mesa. Partidas a 40 piedras con ocho reyes. La primera pareja que llega, gana.
           </motion.p>
         </section>
 
@@ -164,7 +165,7 @@ function LobbyView({ user }) {
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           <motion.article
             {...rise(3)}
-            className="glass group relative overflow-hidden rounded-[28px] p-8 lg:col-span-7 lg:row-span-2 lg:min-h-[420px]"
+            className="glass group relative overflow-hidden rounded-[28px] p-6 sm:p-8 lg:col-span-7 lg:row-span-2 lg:min-h-[420px]"
           >
             <div className="absolute inset-0 bg-[radial-gradient(80%_70%_at_85%_60%,rgba(212,255,79,0.12),transparent_60%)]" />
             <div className="pointer-events-none absolute -right-10 bottom-[-78px] hidden h-[340px] w-[440px] md:block" aria-hidden>
@@ -189,7 +190,7 @@ function LobbyView({ user }) {
             </div>
             <div className="relative flex h-full flex-col">
               <span className="eyebrow text-acid">Matchmaking</span>
-              <h2 className="mt-4 font-display text-[56px] leading-none tracking-[-0.02em]">Partida rápida</h2>
+              <h2 className="mt-4 font-display text-[44px] leading-none tracking-[-0.02em] sm:text-[56px]">Partida rápida</h2>
               <p className="mt-4 max-w-[30ch] text-[15px] leading-relaxed text-bone-dim">
                 Te sentamos en la primera mesa pública con hueco. Si no hay ninguna, abrimos una para ti.
               </p>
@@ -204,7 +205,7 @@ function LobbyView({ user }) {
             </div>
           </motion.article>
 
-          <motion.article {...rise(4)} className="glass relative rounded-[28px] p-7 lg:col-span-5">
+          <motion.article {...rise(4)} className="glass relative rounded-[28px] p-5 sm:p-7 lg:col-span-5">
             <span className="eyebrow">Con amigos</span>
             <div className="mt-3 flex items-end justify-between gap-6">
               <div>
@@ -219,7 +220,7 @@ function LobbyView({ user }) {
             </div>
           </motion.article>
 
-          <motion.article {...rise(5)} className="glass relative rounded-[28px] p-7 lg:col-span-5">
+          <motion.article {...rise(5)} className="glass relative rounded-[28px] p-5 sm:p-7 lg:col-span-5">
             <span className="eyebrow">Invitación</span>
             <h3 className="mt-3 font-display text-[36px] leading-none">Unirse con código</h3>
             <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -233,7 +234,7 @@ function LobbyView({ user }) {
 
         {/* Estadísticas, mesas abiertas y entrenamiento */}
         <section className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-12">
-          <motion.div {...rise(6)} className="glass rounded-[28px] p-7 lg:col-span-5">
+          <motion.div {...rise(6)} className="glass rounded-[28px] p-5 sm:p-7 lg:col-span-5">
             <div className="flex items-center justify-between">
               <span className="eyebrow">Tu historial</span>
               {user.isGuest && <span className="font-mono text-[10.5px] text-gold">Invitado · sin guardar</span>}
@@ -246,7 +247,11 @@ function LobbyView({ user }) {
             </div>
           </motion.div>
 
-          <motion.div {...rise(7)} className="glass rounded-[28px] p-7 lg:col-span-4">
+          <motion.div {...rise(7)} className="lg:col-span-7 lg:row-span-3">
+            <FriendsPanel className="h-full" title="Amigos · invítales de compañero" />
+          </motion.div>
+
+          <motion.div {...rise(8)} className="glass rounded-[28px] p-5 sm:p-7 lg:col-span-5">
             <span className="eyebrow">Mesas abiertas</span>
             <ul className="thin-scroll mt-4 max-h-[132px] space-y-1.5 overflow-y-auto pr-1">
               {rooms.length === 0 && (
@@ -273,7 +278,7 @@ function LobbyView({ user }) {
           {user.features?.devTools && (
             <motion.div
               {...rise(8)}
-              className="relative overflow-hidden rounded-[28px] border border-dashed border-white/10 p-7 lg:col-span-3"
+              className="relative overflow-hidden rounded-[28px] border border-dashed border-white/10 p-5 sm:p-7 lg:col-span-5"
             >
               <span className="eyebrow">Entrenamiento</span>
               <h3 className="mt-3 font-display text-[30px] leading-none">Contra bots</h3>
@@ -284,6 +289,7 @@ function LobbyView({ user }) {
             </motion.div>
           )}
         </section>
+        <CardsCredit className="mt-10 text-center" />
       </div>
     </div>
   )

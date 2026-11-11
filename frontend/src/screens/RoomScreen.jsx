@@ -4,6 +4,7 @@ import { actions, toast, useStore } from '../lib/store'
 import { relativeSeat, isMyTeam } from '../lib/mus'
 import { cx } from '../lib/cx'
 import { Avatar, Button, ConnectionDot, Wordmark } from '../components/ui'
+import { FriendsPanel } from '../components/Friends'
 
 const ease = [0.16, 1, 0.3, 1]
 
@@ -36,9 +37,9 @@ function Seat({ member, seatIndex, rel, mySeat, hostId, onSit }) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.85 }}
             transition={{ duration: 0.5, ease }}
-            className="flex w-[150px] flex-col items-center text-center"
+            className="flex w-[104px] flex-col items-center text-center sm:w-[150px]"
           >
-            <Avatar name={member.username} team={team} size={isMe ? 72 : 62} isBot={member.isBot} connected={member.connected} active={member.ready} />
+            <Avatar name={member.username} team={team} size={isMe ? 64 : 56} isBot={member.isBot} connected={member.connected} active={member.ready} />
             <div className="mt-3 max-w-full truncate text-[14px] font-medium">
               {member.username}
               {isMe && <span className="text-bone-dim"> · tú</span>}
@@ -66,9 +67,9 @@ function Seat({ member, seatIndex, rel, mySeat, hostId, onSit }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onSit}
-            className="group flex w-[150px] flex-col items-center"
+            className="group flex w-[104px] flex-col items-center sm:w-[150px]"
           >
-            <span className="flex h-[62px] w-[62px] items-center justify-center rounded-full border border-dashed border-white/15 text-bone-dim transition-all group-hover:border-acid/60 group-hover:text-acid group-hover:shadow-[0_0_30px_-6px_rgba(212,255,79,0.5)]">
+            <span className="flex h-[56px] w-[56px] items-center justify-center rounded-full border border-dashed border-white/15 text-bone-dim transition-all group-hover:border-acid/60 group-hover:text-acid group-hover:shadow-[0_0_30px_-6px_rgba(212,255,79,0.5)]">
               <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
                 <path d="M9 3v12M3 9h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
@@ -107,24 +108,28 @@ function RoomView({ room, user }) {
   }
 
   let status = `Faltan ${4 - count} ${4 - count === 1 ? 'jugador' : 'jugadores'}`
+  if (room.searching) status = `Buscando rivales… ${status.toLowerCase()}`
   if (count === 4 && !allReady) status = 'Mesa completa · esperando a que todos estén listos'
   if (count === 4 && allReady) status = 'Repartiendo…'
 
   return (
     <div className="thin-scroll h-full overflow-y-auto">
-      <div className="mx-auto flex min-h-full max-w-[1240px] flex-col px-6 pb-10 lg:px-10">
-        <header className="flex items-center justify-between py-6">
+      <div className="mx-auto flex min-h-full max-w-[1240px] flex-col px-4 pb-10 sm:px-6 lg:px-10">
+        <header className="flex items-center justify-between py-4 sm:py-6">
           <Button variant="ghost" size="sm" onClick={actions.leaveRoom}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
               <path d="M12 7H2m0 0 4-4M2 7l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
-            Salir de la mesa
+            <span className="hidden sm:inline">Salir de la mesa</span>
+            <span className="sm:hidden">Salir</span>
           </Button>
           <Wordmark />
-          <ConnectionDot />
+          <span className="hidden sm:block">
+            <ConnectionDot />
+          </span>
         </header>
 
-        <div className="grid flex-1 grid-cols-1 items-center gap-8 py-6 lg:grid-cols-[380px_1fr]">
+        <div className="grid flex-1 grid-cols-1 items-start gap-6 py-2 sm:py-6 lg:grid-cols-[380px_1fr] lg:items-center lg:gap-8">
           {/* Panel lateral */}
           <motion.aside
             initial={{ opacity: 0, x: -16 }}
@@ -132,11 +137,11 @@ function RoomView({ room, user }) {
             transition={{ duration: 0.8, ease }}
             className="flex flex-col gap-4"
           >
-            <div className="glass rounded-[28px] p-7">
+            <div className="glass rounded-[28px] p-5 sm:p-7">
               <span className="eyebrow">{room.isPrivate ? 'Mesa privada' : 'Mesa pública'} · código</span>
               <button
                 onClick={() => copy(room.code, 'Código')}
-                className="mt-4 block font-mono text-[46px] leading-none tracking-[0.22em] text-acid transition-[text-shadow] hover:[text-shadow:0_0_24px_rgba(212,255,79,0.6)]"
+                className="mt-4 block font-mono text-[38px] leading-none tracking-[0.22em] text-acid sm:text-[46px] transition-[text-shadow] hover:[text-shadow:0_0_24px_rgba(212,255,79,0.6)]"
                 title="Copiar código"
               >
                 {room.code}
@@ -151,7 +156,7 @@ function RoomView({ room, user }) {
               </div>
             </div>
 
-            <div className="glass rounded-[28px] p-7">
+            <div className="glass rounded-[28px] p-5 sm:p-7">
               <div className="flex items-baseline justify-between">
                 <span className="eyebrow">Jugadores</span>
                 <span className="font-mono text-[13px] tabular text-bone">
@@ -180,6 +185,18 @@ function RoomView({ room, user }) {
                 {me?.ready ? 'Listo · cancelar' : 'Estoy listo'}
               </Button>
 
+              {count < 4 && (
+                <Button
+                  variant="glass"
+                  className={cx('mt-3 w-full', room.searching && 'border-acid/40 text-acid')}
+                  onClick={() => actions.setSearching(!room.searching)}
+                  title="Abre la mesa para que entren rivales (o otra pareja) automáticamente"
+                >
+                  {room.searching && <span className="h-2 w-2 animate-pulse rounded-full bg-acid" />}
+                  {room.searching ? 'Buscando rivales · parar' : 'Buscar rivales'}
+                </Button>
+              )}
+
               {user.features?.devTools && count < 4 && (
                 <button
                   onClick={actions.addBots}
@@ -196,7 +213,7 @@ function RoomView({ room, user }) {
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, ease }}
-            className="relative mx-auto aspect-[1.55] w-full max-w-[700px] px-[90px] py-[80px]"
+            className="relative mx-auto aspect-[0.9] w-full max-w-[700px] px-[56px] py-[78px] sm:aspect-[1.55] sm:px-[90px] sm:py-[80px]"
           >
             <div className="relative h-full w-full">
               <div className="absolute inset-0 rounded-[50%] border border-acid/25 bg-[radial-gradient(ellipse_at_50%_35%,#191d23,#0c0e11_70%)] shadow-[0_0_90px_-20px_rgba(212,255,79,0.3),inset_0_0_60px_rgba(0,0,0,0.7)]" />
@@ -222,6 +239,11 @@ function RoomView({ room, user }) {
               ))}
             </div>
           </motion.div>
+          {count < 4 && (
+            <div className="lg:col-span-2">
+              <FriendsPanel title="Invita a tu compañero" inviteLabel="Invitar a la mesa" />
+            </div>
+          )}
         </div>
 
         <p className="text-center text-[12.5px] text-mute">
