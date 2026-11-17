@@ -1,0 +1,11 @@
+# Dependencias (se instalan con npm install, no se versionan)
+node_modules/
+
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
+
+# Builds y logs
+dist/
+*.log

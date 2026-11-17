@@ -10,13 +10,17 @@ app.use(express.json());
 
 const server = http.createServer(app);
 
-// Configuración de la conexión a PostgreSQL (Asegúrate de ajustar usuario/contraseña si es necesario)
+// Configuración de la conexión a PostgreSQL.
+// Las credenciales se leen de variables de entorno (fichero .env, que NO se sube a Git).
+// Ver backend/.env.example para la lista de variables.
+require('dotenv').config();
+
 const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'mus_premium',
-  password: 'admin', // Cambia esto por tu contraseña local de postgres si tienes una
-  port: 5432,
+  user: process.env.PGUSER || 'postgres',
+  host: process.env.PGHOST || 'localhost',
+  database: process.env.PGDATABASE || 'mus_premium',
+  password: process.env.PGPASSWORD,
+  port: Number(process.env.PGPORT) || 5432,
 });
 
 // Comprobar conexión a la base de datos y crear tabla inicial de usuarios
